@@ -1,0 +1,28 @@
+# First stage: Build dependencies
+FROM python:3.10-slim as builder
+
+WORKDIR /app
+
+COPY . /app
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libglib2.0-0 \
+    libgl1-mesa-glx \
+    ffmpeg && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Final stage: Copy from builder
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Copy the installed dependencies from the builder stage
+COPY --from=builder /usr/local/lib /usr/local/lib
+COPY --from=builder /lib /lib
+COPY --from=builder /app /app
+
+EXPOSE 5000
+
+CMD ["python", "models/aim/main.py"]
+
